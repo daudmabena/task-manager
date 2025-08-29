@@ -30,10 +30,18 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'view systems']);
         Permission::firstOrCreate(['name' => 'delete systems']);
 
+        // User management permissions
+        Permission::firstOrCreate(['name' => 'view users']);
+        Permission::firstOrCreate(['name' => 'create users']);
+        Permission::firstOrCreate(['name' => 'edit users']);
+        Permission::firstOrCreate(['name' => 'delete users']);
+        Permission::firstOrCreate(['name' => 'assign roles']);
+        Permission::firstOrCreate(['name' => 'manage permissions']);
+
         // Create roles and assign existing permissions
-        $adminRole = Role::create(['name' => 'admin']);
-        $managerRole = Role::create(['name' => 'manager']);
-        $userRole = Role::create(['name' => 'user']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $managerRole = Role::firstOrCreate(['name' => 'manager']);
+        $userRole = Role::firstOrCreate(['name' => 'user']);
 
         // Admin gets all permissions
         $adminRole->givePermissionTo(Permission::all());
@@ -41,7 +49,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Manager gets task management permissions
         $managerRole->givePermissionTo([
             'view tasks',
-            'create tasks', 
+            'create tasks',
             'edit tasks',
             'delete tasks',
             'view activity logs',
