@@ -59,6 +59,22 @@ Requests - Form Requests folder: app/Http/Requests/\*
 
 Additional Considerations:
 
+@crude_per_table.md for all
+
+    - Use `Inertia::render()` for returning views
+    - This is not api or sort of backend application its monorepo laravel with Inertia
+    - Use `Redirect::route()` with `->with('success', 'Message')` for post actions
+
+    @2025_08_28_142708_create_processes_table.php @2025_08_28_142725_create_correspondences_table.php @2025_08_28_142714_create_functions_requirements_table.php @2025_08_28_142720_create_tasks_tracking_table.php
+
+    •  Use role-based permissions throughout your implementation
+    •  Track all model changes with auditing and activity logs
+    •  Build advanced filtered queries with the query builder
+    •  Debug with Telescope and Debugbar
+    •  Use beautiful icons from lucide-react
+    •  Show toast notifications
+    •  Display loading progress during navigation
+
     -   named modal  based on table_name snake_case
     -   same for controller should be equal to the table name but snake_case
     -   Add robust error handling

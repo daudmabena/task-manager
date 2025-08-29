@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { index as systemsIndex, edit as systemsEdit } from '@/routes/systems';
 import { type BreadcrumbItem } from '@/types';
@@ -10,6 +9,7 @@ import { ArrowLeft, Edit, Calendar, User } from 'lucide-react';
 interface System {
     id: number;
     name: string;
+    slug: string;
     description: string;
     created_at: string;
     updated_at: string;
@@ -67,7 +67,7 @@ export default function SystemsShow({ system }: SystemsShowProps) {
                             </p>
                         </div>
                     </div>
-                    <Link href={systemsEdit(system.id).url}>
+                    <Link href={systemsEdit({ slug: system.slug }).url}>
                         <Button>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit System
@@ -146,7 +146,7 @@ export default function SystemsShow({ system }: SystemsShowProps) {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center space-x-2">
-                            <Link href={systemsEdit(system.id).url}>
+                            <Link href={systemsEdit({ slug: system.slug }).url}>
                                 <Button variant="outline">
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit System

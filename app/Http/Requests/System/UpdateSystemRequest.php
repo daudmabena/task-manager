@@ -11,7 +11,7 @@ class UpdateSystemRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('edit systems');
     }
 
     /**
@@ -21,8 +21,10 @@ class UpdateSystemRequest extends FormRequest
      */
     public function rules(): array
     {
+        $system = $this->route('system');
+        
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:systems,name,' . $system->id],
             'description' => ['required', 'string'],
         ];
     }

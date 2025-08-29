@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class ProfileController extends Controller
 {
@@ -18,14 +20,34 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $user->load(['roles', 'permissions']);
+        
+        // Get all available roles and permissions for display
+        $availableRoles = Role::all();
+        $availablePermissions = Permission::all();
+        
+        // Get user's permissions via roles
+        $permissionsViaRoles = $user->getPermissionsViaRoles();
+        
+        // Check if user can manage roles
+        $canManageUsers = $user->hasPermissionTo('manage users');
+        
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'userRoles' => $user->roles,
+            'userPermissions' => $user->permissions,
+            'permissionsViaRoles' => $permissionsViaRoles,
+            'availableRoles' => $availableRoles,
+            'availablePermissions' => $availablePermissions,
+            'canManageUsers' => $canManageUsers,
         ]);
     }
 
     /**
      * Update the user's profile settings.
+     * 
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {

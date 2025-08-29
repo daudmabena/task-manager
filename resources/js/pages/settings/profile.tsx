@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/profile';
+import UserRoleManager from '../../components/UserRoleManager';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -21,7 +22,27 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
+interface ProfileProps {
+    mustVerifyEmail: boolean;
+    status?: string;
+    userRoles?: any[];
+    userPermissions?: any[];
+    permissionsViaRoles?: any[];
+    availableRoles?: any[];
+    availablePermissions?: any[];
+    canManageUsers?: boolean;
+}
+
+export default function Profile({ 
+    mustVerifyEmail, 
+    status, 
+    userRoles = [], 
+    userPermissions = [], 
+    permissionsViaRoles = [], 
+    availableRoles = [], 
+    availablePermissions = [], 
+    canManageUsers = false 
+}: ProfileProps) {
     const { auth } = usePage<SharedData>().props;
 
     return (
@@ -112,6 +133,31 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                         )}
                     </Form>
                 </div>
+
+                {/* Role Management Section */}
+                {(userRoles.length > 0 || canManageUsers) && (
+                    <div className="space-y-6">
+                        <HeadingSmall 
+                            title="Roles & Permissions" 
+                            description="View your current roles and permissions" 
+                        />
+                        
+                        <UserRoleManager
+                            user={{
+                                id: auth.user.id,
+                                name: auth.user.name,
+                                email: auth.user.email,
+                                roles: userRoles,
+                                permissions: userPermissions
+                            }}
+                            availableRoles={availableRoles}
+                            availablePermissions={availablePermissions}
+                            permissionsViaRoles={permissionsViaRoles}
+                            canManageUsers={false}
+                            isCurrentUser={true}
+                        />
+                    </div>
+                )}
 
                 <DeleteUser />
             </SettingsLayout>

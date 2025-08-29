@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import { index as systemsIndex, edit as systemsEdit, update as systemsUpdate } from '@/routes/systems';
+import { index as systemsIndex, update as systemsUpdate } from '@/routes/systems';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -11,6 +11,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 interface System {
     id: number;
     name: string;
+    slug: string;
     description: string;
 }
 
@@ -37,7 +38,7 @@ export default function SystemsEdit({ system }: SystemsEditProps) {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        put(systemsUpdate(system.id).url);
+        put(systemsUpdate({ slug: system.slug }).url);
     };
 
     return (

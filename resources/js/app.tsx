@@ -5,20 +5,16 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
-import { progress } from '@inertiajs/progress';
 import { ToastContainer } from 'react-toastify';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Initialize Inertia progress bar
-progress.init({
-    color: '#4B5563',
-    showSpinner: true,
-});
-
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
+    progress: {
+        color: '#4B5563',
+    },
     setup({ el, App, props }) {
         const root = createRoot(el);
 

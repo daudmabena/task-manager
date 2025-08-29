@@ -4,22 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Process extends Model implements Auditable
 {
     use HasFactory;
     use AuditableTrait;
-    use LogsActivity;
     use SoftDeletes;
 
     protected $fillable = [
@@ -36,17 +31,6 @@ class Process extends Model implements Auditable
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
-
-    /**
-     * Get the options for the activity log.
-     */
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['system_id', 'name', 'description'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 
     /**
      * Get the system that owns the process.
@@ -67,7 +51,7 @@ class Process extends Model implements Auditable
     /**
      * Get the user who created the process.
      */
-    public function createdBy(): BelongsTo
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
@@ -75,7 +59,7 @@ class Process extends Model implements Auditable
     /**
      * Get the user who last updated the process.
      */
-    public function updatedBy(): BelongsTo
+    public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
@@ -83,64 +67,23 @@ class Process extends Model implements Auditable
     /**
      * Get the user who deleted the process.
      */
-    public function deletedBy(): BelongsTo
+    public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
-    /**
-     * Query builder scope for filtering processes.
-     */
-    public static function allowedFilters(): array
-    {
-        return [
-            'name',
-            'description',
-            AllowedFilter::exact('system_id'),
-            AllowedFilter::scope('by_system'),
-            AllowedFilter::scope('recent'),
-        ];
-    }
+    // Scope Methods
 
     /**
-     * Query builder scope for sorting processes.
+     * Scope a query to only include processes for a specific system.
      */
-    public static function allowedSorts(): array
-    {
-        return [
-            'name',
-            'system_id',
-            'created_at',
-            'updated_at',
-        ];
-    }
-
-    /**
-     * Scope for processes by system.
-     */
-    public function scopeBySystem($query, $systemId)
+    public function scopeForSystem($query, $systemId)
     {
         return $query->where('system_id', $systemId);
     }
 
     /**
-     * Scope for recent processes.
-     */
-    public function scopeRecent($query, $days = 30)
-    {
-        return $query->where('created_at', '>=', now()->subDays($days));
-    }
-
-    /**
-     * Scope for processes with functions requirements.
-     */
-    public function scopeWithFunctionsRequirements($query)
-    {
-        return $query->with('functionsRequirements');
-    }
-
-    /**
-     * Scope for processes by name search.
+     * Scope a query to only include processes with a specific name.
      */
     public function scopeByName($query, $name)
     {
@@ -148,25 +91,129 @@ class Process extends Model implements Auditable
     }
 
     /**
-     * Get processes with their related data.
+     * Scope a query to only include processes created by a specific user.
      */
-    public static function withRelations()
+    public function scopeCreatedBy($query, $userId)
     {
-        return self::with(['system', 'functionsRequirements', 'createdBy', 'updatedBy']);
+        return $query->where('created_by', $userId);
     }
 
     /**
-     * Get processes summary statistics.
+     * Scope a query to only include processes updated by a specific user.
      */
-    public static function getSummary()
+    public function scopeUpdatedBy($query, $userId)
     {
-        return [
-            'total' => self::count(),
-            'by_system' => self::select('system_id', DB::raw('count(*) as count'))
-                ->with('system:id,name')
-                ->groupBy('system_id')
-                ->get(),
-            'recent_count' => self::recent()->count(),
-        ];
+        return $query->where('updated_by', $userId);
+    }
+
+    /**
+     * Scope a query to only include processes created within a date range.
+     */
+    public function scopeCreatedBetween($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('created_at', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope a query to only include processes updated within a date range.
+     */
+    public function scopeUpdatedBetween($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('updated_at', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope a query to only include processes with functions requirements.
+     */
+    public function scopeWithFunctionsRequirements($query)
+    {
+        return $query->has('functionsRequirements');
+    }
+
+    /**
+     * Scope a query to only include processes without functions requirements.
+     */
+    public function scopeWithoutFunctionsRequirements($query)
+    {
+        return $query->doesntHave('functionsRequirements');
+    }
+
+    /**
+     * Scope a query to only include processes with a specific number of functions requirements.
+     */
+    public function scopeWithFunctionsRequirementsCount($query, $count)
+    {
+        return $query->withCount('functionsRequirements')->having('functions_requirements_count', $count);
+    }
+
+    /**
+     * Scope a query to only include processes with functions requirements count greater than.
+     */
+    public function scopeWithFunctionsRequirementsCountGreaterThan($query, $count)
+    {
+        return $query->withCount('functionsRequirements')->having('functions_requirements_count', '>', $count);
+    }
+
+    /**
+     * Scope a query to only include processes with functions requirements count less than.
+     */
+    public function scopeWithFunctionsRequirementsCountLessThan($query, $count)
+    {
+        return $query->withCount('functionsRequirements')->having('functions_requirements_count', '<', $count);
+    }
+
+    /**
+     * Get the total count of functions requirements for this process.
+     */
+    public function getFunctionsRequirementsCountAttribute()
+    {
+        return $this->functionsRequirements()->count();
+    }
+
+    /**
+     * Get the total count of tasks tracking for this process.
+     */
+    public function getTasksTrackingCountAttribute()
+    {
+        return $this->functionsRequirements()
+            ->withCount('tasksTracking')
+            ->get()
+            ->sum('tasks_tracking_count');
+    }
+
+    /**
+     * Get the total count of completed tasks for this process.
+     */
+    public function getCompletedTasksCountAttribute()
+    {
+        return $this->functionsRequirements()
+            ->whereHas('tasksTracking', function ($query) {
+                $query->where('status', 'completed');
+            })
+            ->count();
+    }
+
+    /**
+     * Get the total count of pending tasks for this process.
+     */
+    public function getPendingTasksCountAttribute()
+    {
+        return $this->functionsRequirements()
+            ->whereHas('tasksTracking', function ($query) {
+                $query->where('status', 'pending');
+            })
+            ->count();
+    }
+
+    /**
+     * Get the total count of in-progress tasks for this process.
+     */
+    public function getInProgressTasksCountAttribute()
+    {
+        return $this->functionsRequirements()
+            ->whereHas('tasksTracking', function ($query) {
+                $query->where('status', 'in_progress');
+            })
+            ->count();
     }
 }

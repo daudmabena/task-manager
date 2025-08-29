@@ -12,7 +12,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    Route::resource('systems', \App\Http\Controllers\SystemsController::class);
+    Route::resource('systems', \App\Http\Controllers\SystemsController::class)->parameters([
+        'systems' => 'system:slug'
+    ]);
 });
 
 require __DIR__ . '/settings.php';

@@ -4,22 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FunctionsRequirement extends Model implements Auditable
 {
     use HasFactory;
     use AuditableTrait;
-    use LogsActivity;
     use SoftDeletes;
 
     protected $fillable = [
@@ -42,18 +37,7 @@ class FunctionsRequirement extends Model implements Auditable
     ];
 
     /**
-     * Get the options for the activity log.
-     */
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['process_id', 'name', 'requirement', 'planned_start_date', 'planned_end_date'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
-
-    /**
-     * Get the process that owns the function requirement.
+     * Get the process that owns the functions requirement.
      */
     public function process(): BelongsTo
     {
@@ -61,7 +45,7 @@ class FunctionsRequirement extends Model implements Auditable
     }
 
     /**
-     * Get the tasks tracking for the function requirement.
+     * Get the tasks tracking for the functions requirement.
      */
     public function tasksTracking(): HasMany
     {
@@ -69,94 +53,41 @@ class FunctionsRequirement extends Model implements Auditable
     }
 
     /**
-     * Get the user who created the function requirement.
+     * Get the user who created the functions requirement.
      */
-    public function createdBy(): BelongsTo
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
-     * Get the user who last updated the function requirement.
+     * Get the user who last updated the functions requirement.
      */
-    public function updatedBy(): BelongsTo
+    public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**
-     * Get the user who deleted the function requirement.
+     * Get the user who deleted the functions requirement.
      */
-    public function deletedBy(): BelongsTo
+    public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
-    /**
-     * Query builder scope for filtering function requirements.
-     */
-    public static function allowedFilters(): array
-    {
-        return [
-            'name',
-            'requirement',
-            AllowedFilter::exact('process_id'),
-            AllowedFilter::scope('by_process'),
-            AllowedFilter::scope('upcoming'),
-            AllowedFilter::scope('overdue'),
-        ];
-    }
+    // Scope Methods
 
     /**
-     * Query builder scope for sorting function requirements.
+     * Scope a query to only include functions requirements for a specific process.
      */
-    public static function allowedSorts(): array
-    {
-        return [
-            'name',
-            'process_id',
-            'planned_start_date',
-            'planned_end_date',
-            'created_at',
-            'updated_at',
-        ];
-    }
-
-    /**
-     * Scope for function requirements by process.
-     */
-    public function scopeByProcess($query, $processId)
+    public function scopeForProcess($query, $processId)
     {
         return $query->where('process_id', $processId);
     }
 
     /**
-     * Scope for upcoming function requirements.
-     */
-    public function scopeUpcoming($query, $days = 30)
-    {
-        return $query->where('planned_start_date', '>=', now())
-            ->where('planned_start_date', '<=', now()->addDays($days));
-    }
-
-    /**
-     * Scope for overdue function requirements.
-     */
-    public function scopeOverdue($query)
-    {
-        return $query->where('planned_end_date', '<', now());
-    }
-
-    /**
-     * Scope for function requirements with tasks tracking.
-     */
-    public function scopeWithTasksTracking($query)
-    {
-        return $query->with('tasksTracking');
-    }
-
-    /**
-     * Scope for function requirements by name search.
+     * Scope a query to only include functions requirements with a specific name.
      */
     public function scopeByName($query, $name)
     {
@@ -164,26 +95,189 @@ class FunctionsRequirement extends Model implements Auditable
     }
 
     /**
-     * Get function requirements with their related data.
+     * Scope a query to only include functions requirements created by a specific user.
      */
-    public static function withRelations()
+    public function scopeCreatedBy($query, $userId)
     {
-        return self::with(['process', 'tasksTracking', 'createdBy', 'updatedBy']);
+        return $query->where('created_by', $userId);
     }
 
     /**
-     * Get function requirements summary statistics.
+     * Scope a query to only include functions requirements updated by a specific user.
      */
-    public static function getSummary()
+    public function scopeUpdatedBy($query, $userId)
     {
-        return [
-            'total' => self::count(),
-            'upcoming' => self::upcoming()->count(),
-            'overdue' => self::overdue()->count(),
-            'by_process' => self::select('process_id', DB::raw('count(*) as count'))
-                ->with('process:id,name')
-                ->groupBy('process_id')
-                ->get(),
-        ];
+        return $query->where('updated_by', $userId);
+    }
+
+    /**
+     * Scope a query to only include functions requirements with planned start date in the future.
+     */
+    public function scopeUpcoming($query)
+    {
+        return $query->where('planned_start_date', '>', now());
+    }
+
+    /**
+     * Scope a query to only include functions requirements with planned start date in the past.
+     */
+    public function scopeOverdue($query)
+    {
+        return $query->where('planned_start_date', '<', now());
+    }
+
+    /**
+     * Scope a query to only include functions requirements with planned end date in the future.
+     */
+    public function scopeNotCompleted($query)
+    {
+        return $query->where('planned_end_date', '>', now());
+    }
+
+    /**
+     * Scope a query to only include functions requirements with planned end date in the past.
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('planned_end_date', '<', now());
+    }
+
+    /**
+     * Scope a query to only include functions requirements within a date range.
+     */
+    public function scopePlannedBetween($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('planned_start_date', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope a query to only include functions requirements ending within a date range.
+     */
+    public function scopeEndingBetween($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('planned_end_date', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope a query to only include functions requirements with tasks tracking.
+     */
+    public function scopeWithTasksTracking($query)
+    {
+        return $query->has('tasksTracking');
+    }
+
+    /**
+     * Scope a query to only include functions requirements without tasks tracking.
+     */
+    public function scopeWithoutTasksTracking($query)
+    {
+        return $query->doesntHave('tasksTracking');
+    }
+
+    /**
+     * Scope a query to only include functions requirements with a specific number of tasks tracking.
+     */
+    public function scopeWithTasksTrackingCount($query, $count)
+    {
+        return $query->withCount('tasksTracking')->having('tasks_tracking_count', $count);
+    }
+
+    /**
+     * Scope a query to only include functions requirements with tasks tracking count greater than.
+     */
+    public function scopeWithTasksTrackingCountGreaterThan($query, $count)
+    {
+        return $query->withCount('tasksTracking')->having('tasks_tracking_count', '>', $count);
+    }
+
+    /**
+     * Scope a query to only include functions requirements with tasks tracking count less than.
+     */
+    public function scopeWithTasksTrackingCountLessThan($query, $count)
+    {
+        return $query->withCount('tasksTracking')->having('tasks_tracking_count', '<', $count);
+    }
+
+    /**
+     * Get the total count of tasks tracking for this functions requirement.
+     */
+    public function getTasksTrackingCountAttribute()
+    {
+        return $this->tasksTracking()->count();
+    }
+
+    /**
+     * Get the total count of completed tasks for this functions requirement.
+     */
+    public function getCompletedTasksCountAttribute()
+    {
+        return $this->tasksTracking()->where('status', 'completed')->count();
+    }
+
+    /**
+     * Get the total count of pending tasks for this functions requirement.
+     */
+    public function getPendingTasksCountAttribute()
+    {
+        return $this->tasksTracking()->where('status', 'pending')->count();
+    }
+
+    /**
+     * Get the total count of in-progress tasks for this functions requirement.
+     */
+    public function getInProgressTasksCountAttribute()
+    {
+        return $this->tasksTracking()->where('status', 'in_progress')->count();
+    }
+
+    /**
+     * Check if the functions requirement is overdue.
+     */
+    public function getIsOverdueAttribute()
+    {
+        return $this->planned_start_date < now() && $this->planned_end_date > now();
+    }
+
+    /**
+     * Check if the functions requirement is completed.
+     */
+    public function getIsCompletedAttribute()
+    {
+        return $this->planned_end_date < now();
+    }
+
+    /**
+     * Check if the functions requirement is upcoming.
+     */
+    public function getIsUpcomingAttribute()
+    {
+        return $this->planned_start_date > now();
+    }
+
+    /**
+     * Get the duration in days.
+     */
+    public function getDurationDaysAttribute()
+    {
+        return $this->planned_start_date->diffInDays($this->planned_end_date);
+    }
+
+    /**
+     * Get the progress percentage based on current date.
+     */
+    public function getProgressPercentageAttribute()
+    {
+        if ($this->planned_start_date > now()) {
+            return 0;
+        }
+
+        if ($this->planned_end_date < now()) {
+            return 100;
+        }
+
+        $totalDays = $this->planned_start_date->diffInDays($this->planned_end_date);
+        $elapsedDays = $this->planned_start_date->diffInDays(now());
+
+        return min(100, round(($elapsedDays / $totalDays) * 100, 2));
     }
 }

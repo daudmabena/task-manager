@@ -11,7 +11,7 @@ class StoreSystemRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('create systems');
     }
 
     /**
@@ -22,7 +22,7 @@ class StoreSystemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:systems,name'],
             'description' => ['required', 'string'],
         ];
     }
