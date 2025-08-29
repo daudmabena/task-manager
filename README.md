@@ -1,5 +1,9 @@
 # Task Manager
 
+> A modern, full-featured task management application built with Laravel, Inertia.js, and React. Features comprehensive user management, role-based access control, and advanced task tracking with audit trails.
+
+**Tags:** `laravel` `react` `inertiajs` `typescript` `tailwindcss` `task-management` `user-management` `rbac` `permissions` `audit-trails` `activity-logging` `mysql` `vite` `shadcn-ui` `lucide-react` `spatie` `modern-stack` `responsive` `dark-mode` `enterprise`
+
 A modern, full-featured task management application built with Laravel, Inertia.js, and React. This application provides comprehensive project management capabilities with user authentication, role-based access control, and advanced task tracking features.
 
 ## 🚀 Features
